@@ -155,20 +155,28 @@
   <!-- Background Audio: Kevin MacLeod - Fluffing a Duck -->
   <audio id="bgm-audio" src="assets/fluffing_a_duck.mp3" loop preload="auto"></audio>
 
-  <!-- Floating Music Toggle Button (Top Right) -->
-  <button id="bgm-btn" onclick="toggleBgm()" class="fixed top-3 right-3 z-50 comic-btn px-3 py-1.5 bg-punchYellow hover:bg-yellow-300 text-stone-900 text-xs font-display font-black flex items-center gap-1.5">
-    <span id="bgm-icon" class="text-base">🦆</span>
-    <span id="bgm-label">เปิดเพลงเป็ด</span>
-  </button>
+  <!-- Floating Music & Volume Controls (Top Right) -->
+  <div class="fixed top-2.5 right-2.5 z-50 flex items-center gap-1.5">
+    <button id="bgm-btn" onclick="toggleBgm()" class="comic-btn px-2.5 py-1.5 bg-punchYellow hover:bg-yellow-300 text-stone-900 text-xs font-display font-black flex items-center gap-1">
+      <span id="bgm-icon" class="text-sm">🦆</span>
+      <span id="bgm-label">เปิดเพลงเป็ด</span>
+    </button>
+    <div class="comic-btn bg-white px-1.5 py-1 flex items-center gap-1 text-xs font-display font-black text-stone-900">
+      <button onclick="changeVolume(-0.15)" title="ลดเสียง" class="w-5 h-5 rounded-md bg-stone-100 hover:bg-punchYellow border border-stone-900 flex items-center justify-center leading-none">−</button>
+      <span id="bgm-vol-label" class="min-w-[30px] text-center text-[11px]">45%</span>
+      <button onclick="changeVolume(0.15)" title="เพิ่มเสียง" class="w-5 h-5 rounded-md bg-stone-100 hover:bg-punchYellow border border-stone-900 flex items-center justify-center leading-none">+</button>
+    </div>
+  </div>
 
   <script>
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     let bgmPlaying = false;
+    let bgmVolume = 0.45;
 
     function startBgm() {
       const audio = document.getElementById('bgm-audio');
       if (!audio) return;
-      audio.volume = 0.45;
+      audio.volume = bgmVolume;
       audio.play().then(() => {
         bgmPlaying = true;
         updateBgmUi();
@@ -181,7 +189,8 @@
       const audio = document.getElementById('bgm-audio');
       if (!audio) return;
       if (audio.paused) {
-        audio.volume = 0.45;
+        if (bgmVolume <= 0.02) bgmVolume = 0.45;
+        audio.volume = bgmVolume;
         audio.play().then(() => {
           bgmPlaying = true;
           updateBgmUi();
@@ -193,16 +202,37 @@
       }
     }
 
+    function changeVolume(delta) {
+      const audio = document.getElementById('bgm-audio');
+      bgmVolume = Math.max(0, Math.min(1, Math.round((bgmVolume + delta) * 100) / 100));
+      if (audio) {
+        audio.volume = bgmVolume;
+        if (bgmVolume > 0 && audio.paused) {
+          audio.play().then(() => {
+            bgmPlaying = true;
+            updateBgmUi();
+          }).catch(() => {});
+        } else if (bgmVolume === 0 && !audio.paused) {
+          audio.pause();
+          bgmPlaying = false;
+        }
+      }
+      updateBgmUi();
+      playSfx('pop');
+    }
+
     function updateBgmUi() {
       const btn = document.getElementById('bgm-btn');
       const icon = document.getElementById('bgm-icon');
       const label = document.getElementById('bgm-label');
-      if (bgmPlaying) {
+      const volLabel = document.getElementById('bgm-vol-label');
+      if (volLabel) volLabel.innerText = `${Math.round(bgmVolume * 100)}%`;
+      if (bgmPlaying && bgmVolume > 0) {
         btn.classList.remove('bg-white');
         btn.classList.add('bg-punchYellow');
         icon.innerText = '🦆🎵';
         icon.classList.add('duck-spin');
-        label.innerText = 'Fluffing a Duck: ON';
+        label.innerText = 'เพลงเป็ด: ON';
       } else {
         btn.classList.remove('bg-punchYellow');
         btn.classList.add('bg-white');
@@ -213,18 +243,20 @@
     }
 
     function playSfx(type) {
+      if (bgmVolume <= 0) return;
       if (audioCtx.state === 'suspended') audioCtx.resume();
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.connect(gain);
       gain.connect(audioCtx.destination);
       const now = audioCtx.currentTime;
+      const volScale = Math.max(0.2, bgmVolume);
 
       if (type === 'swipe') {
         osc.type = 'sine';
         osc.frequency.setValueAtTime(280, now);
         osc.frequency.exponentialRampToValueAtTime(560, now + 0.1);
-        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.setValueAtTime(0.18 * volScale, now);
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
         osc.start(now);
         osc.stop(now + 0.1);
@@ -233,14 +265,14 @@
         osc.frequency.setValueAtTime(523, now);
         osc.frequency.setValueAtTime(659, now + 0.08);
         osc.frequency.setValueAtTime(784, now + 0.16);
-        gain.gain.setValueAtTime(0.22, now);
+        gain.gain.setValueAtTime(0.22 * volScale, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
         osc.start(now);
         osc.stop(now + 0.45);
       } else if (type === 'pop') {
         osc.type = 'sine';
         osc.frequency.setValueAtTime(460, now);
-        gain.gain.setValueAtTime(0.16, now);
+        gain.gain.setValueAtTime(0.16 * volScale, now);
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.06);
         osc.start(now);
         osc.stop(now + 0.06);
@@ -624,7 +656,7 @@
     คัดลอกข้อความเรียบร้อยแล้ว!
   </div>
 
-  <canvas id="export-canvas" width="600" height="1060" class="hidden"></canvas>
+  <canvas id="export-canvas" width="1800" height="3180" class="hidden"></canvas>
 
   <!-- ============================================== -->
   <!-- 8 QUESTIONS & 16 FOUNDER LOGIC                 -->
@@ -686,8 +718,8 @@
           score: 'intuitive', hpDelta: -4, sanityDelta: -6, dataKey: 'lab_numbers_handling', dataVal: 'drawer_stash_avoidance'
         },
         choiceB: {
-          text: 'ใช้ระบบสแกนเอกสารให้ AI แปลงตัวย่อแพทย์ทั้งหมดเป็นภาษาคน สรุปเป็นแผนลดไขมันทันที',
-          score: 'analytical', hpDelta: 6, sanityDelta: 12, dataKey: 'lab_numbers_handling', dataVal: 'ai_ocr_translation'
+          text: 'ใช้ระบบสแกนเอกสารแปลงตัวย่อแพทย์ทั้งหมดเป็นภาษาคน สรุปเป็นแผนลดไขมันทันที',
+          score: 'analytical', hpDelta: 6, sanityDelta: 12, dataKey: 'lab_numbers_handling', dataVal: 'smart_ocr_translation'
         }
       },
 
@@ -752,19 +784,19 @@
       }
     ];
 
-    // 16 Tech-AI Founders with Direct Match Keys so Homie & Rival Photos Display Automatically
+    // 16 Tech Founders with Sarcastic ศัพท์กะเทย Meme Quotes & Direct Match Keys
     const FOUNDERS = {
       'solo_analytical_structured_automated': {
         name: 'Jensen Huang',
         sportType: 'ผู้ทำลายสถิติ (The Record-Breaker)',
         typeGroup: 'TYPE 1 • THE SOLOISTS',
-        quote: '"The more you run, the more you save! ยกชานมไข่มุก BOBA LOVE โอเวอร์คล็อกขาสองข้างด้วยพลัง RTX"',
-        photo: 'assets/founder_jensen.jpg?v=4',
+        quote: '"ใส่แจ็คเก็ตหนังวิ่งกลางแดดประเทศไทยแต่หน้าไม่หยา! ดูดชานมไข่มุกหวานร้อยแล้วสับขาระดับการ์ดจอ RTX จึ้งมากคุณน้า ชีเสิร์ฟความเริ่ดแบบไม่พัก!"',
+        photo: 'assets/founder_jensen.jpg?v=5',
         stamp: '★ OVERCLOCKED',
         traits: ['Overclocked', 'Data-Driven', 'Soloist'],
         drive: 'Soloist 95%', data: 'Analytical 98%', org: 'Single-Hub 95%', disc: 'Automated 92%',
-        pros: 'มุ่งมั่นเป้าหมายสูง ละเอียดยิบกับสถิติ วิเคราะห์ค่าเลือดเป็นสมการ',
-        cons: 'ซ้อมหนักจนกล้ามเนื้อล้า พักผ่อนน้อยเพราะมัวแต่วิเคราะห์ Data',
+        pros: 'เป๊ะปังระดับตัวแม่ วิเคราะห์สถิติและค่าเลือดละเอียดยิบแบบโฮ่งมาก',
+        cons: 'บ้าพลังเกิ๊น! ซ้อมหนักจนกล้ามเนื้อร้องขอชีวิต พักผ่อนคืออะไรไม่รู้จัก',
         matchGoodKey: 'solo_intuitive_structured_automated',
         matchBadKey: 'solo_analytical_spontaneous_automated'
       },
@@ -772,13 +804,13 @@
         name: 'Steve Jobs',
         sportType: 'นักกีฬาผู้รักความสมบูรณ์แบบ (The Purist)',
         typeGroup: 'TYPE 2 • THE SOLOISTS',
-        quote: '"วิ่งเท้าเปล่า สวมเสื้อคอเต่าดำ ไม่สนตัวเลขหยุมหยิม สนแค่ความบริสุทธิ์ของจิตใจ"',
-        photo: 'assets/founder_jobs.jpg?v=4',
+        quote: '"วิ่งเท้าเปล่าสวมคอเต่าดำแบบตัวแม่มินิมอล! ค่าเลือดแดงเถือกแล้วไง ตัวแม่จะแคร์เพื่อ? เน้นวิ่งรับพลังจักรวาลแบบติดแกรม สวยๆ เริ่ดๆ เชิดๆ!"',
+        photo: 'assets/founder_jobs.jpg?v=5',
         stamp: '★ MINIMALIST',
         traits: ['Perfectionist', 'Intuitive', 'Focused'],
         drive: 'Soloist 90%', data: 'Intuitive 85%', org: 'Structured 92%', disc: 'Automated 88%',
-        pros: 'วินัยแน่วแน่ ยึดมั่นในสไตล์เรียบง่ายและเป้าหมายของตัวเอง',
-        cons: 'ไม่ยอมฟังคำเตือนเรื่องตัวเลขเลือด มั่นใจในวิถีมินิมอลของตัวเองเกินไป',
+        pros: 'วินัยจึ้งมาก ยึดมั่นในสไตล์ตัวเองแบบปึ้ง! ไม่มีใครมาสั่งชีได้',
+        cons: 'ดื้อเงียบระดับสิบ หมอเตือนเรื่องตัวเลขในใบตรวจแต่ชีเลือกเมินฉ่ำ',
         matchGoodKey: 'solo_analytical_structured_automated',
         matchBadKey: 'team_analytical_spontaneous_adhoc'
       },
@@ -786,13 +818,13 @@
         name: 'Jack Dorsey',
         sportType: 'ผู้แสวงหาภวังค์แห่งความสงบ (The Flow-Seeker)',
         typeGroup: 'TYPE 3 • THE SOLOISTS',
-        quote: '"แช่น้ำแข็งอุณหภูมิเยือกแข็ง เดินเท้าเปล่า 10 ไมล์ วิ่งสมาธิตัดขาดจากโลก"',
-        photo: 'assets/founder_dorsey.jpg?v=4',
+        quote: '"ตื่นมาแช่น้ำแข็งให้ตัวชาแล้วเดินเท้าเปล่าเข้าป่า 10 กิโล! ใบนัดหมอคืออะไรขอยาดเกลียด ชีเน้นนั่งสมาธิสื่อจิตกับเทวดา ปล่อยจอยแบบตัวมารดา!"',
+        photo: 'assets/founder_dorsey.jpg?v=5',
         stamp: '★ ZEN FLOW',
         traits: ['Zen Monk', 'Cold Plunge', 'Free Spirit'],
         drive: 'Soloist 85%', data: 'Intuitive 95%', org: 'Spontaneous 90%', disc: 'Ad-hoc 85%',
-        pros: 'จิตใจสงบนิ่ง รับรู้สัญญาณร่างกายตัวเองได้ดีเยี่ยม ทนความเจ็บปวดเก่ง',
-        cons: 'ดองเอกสารและใบนัด ไม่ค่อยบันทึกประวัติสุขภาพเป็นทางการ',
+        pros: 'นิ่งสงบสยบความเคลื่อนไหว ฟังเสียงร่างกายตัวเองเก่งแบบเกินต้าน',
+        cons: 'สภาพพพ! ดองใบผลเลือดและใบนัดหมอไว้ชาติเศษ หาเอกสารทีคือว้าวุ่น',
         matchGoodKey: 'solo_analytical_spontaneous_adhoc',
         matchBadKey: 'team_intuitive_structured_adhoc'
       },
@@ -800,13 +832,13 @@
         name: 'Palmer Luckey',
         sportType: 'นักกีฬาสายบ้าระห่ำ (The Daredevil)',
         typeGroup: 'TYPE 4 • THE SOLOISTS',
-        quote: '"สวมเสื้อฮาวายวิ่งสปรินต์แนวทหาร แว่น VR สวมหัว กระโดดลอยตัวริมหาดพร้อมลุย"',
-        photo: 'assets/founder_luckey.jpg?v=4',
+        quote: '"ใส่เสื้อฮาวายสวมแว่น VR กระโดดตีลังการิมหาดแบบตัวตึง! ท่าซ้อมปกติโลกไม่จำ ชีเน้นท่ายากไว้ก่อน ส่วนวิตามินหลังซ้อมเหรอคะ? ลืมกินมา 3 เดือนแล้วจ้า!"',
+        photo: 'assets/founder_luckey.jpg?v=5',
         stamp: '★ DAREDEVIL',
         traits: ['Fearless', 'VR Sprinter', 'Experimental'],
         drive: 'Soloist 88%', data: 'Analytical 80%', org: 'Spontaneous 85%', disc: 'Ad-hoc 80%',
-        pros: 'กล้าลองเทคนิคซ้อมใหม่ๆ ไม่กลัวความยาก พร้อมลุยทุกสภาพแวดล้อม',
-        cons: 'เสี่ยงบาดเจ็บจากการหักโหม มักลืมกินของบำรุงฟื้นฟูกล้ามเนื้อ',
+        pros: 'กล้าลองของใหม่แบบสับ ไม่กลัวความลำบาก พร้อมบวกทุกสนาม',
+        cons: 'ห้าวเป้งจนเสี่ยงเดี้ยง! ซื้อวิตามินมาตั้งโชว์ให้ฝุ่นเกาะเล่นๆ',
         matchGoodKey: 'solo_intuitive_spontaneous_adhoc',
         matchBadKey: 'solo_intuitive_spontaneous_automated'
       },
@@ -814,13 +846,13 @@
         name: 'Elon Musk',
         sportType: 'ขบถผู้แหกทุกกฎเกณฑ์ (The Maverick)',
         typeGroup: 'TYPE 5 • THE COMBATANTS',
-        quote: '"วิ่งบนดาวอังคารด้วยสปีด Cybertruck นอนพื้นโรงงาน 3 ชม. แล้วลุกมาซ้อมต่อ"',
-        photo: 'assets/founder_elon.jpg?v=4',
+        quote: '"นอนพื้นโรงงาน 2 ชั่วโมงแล้วลุกมาทวีตวีนฉ่ำตอนตีสี่! วิ่งสับขาเหมือนหนีเจ้าหนี้ไปดาวอังคาร คอร์ติซอลพุ่งทะลุเพดานแต่ชีบอกสบายมากพส.!"',
+        photo: 'assets/founder_elon.jpg?v=5',
         stamp: '★ CYBERTRUCK',
         traits: ['Hardcore', 'First-Principles', 'Night Owl'],
         drive: 'Soloist 92%', data: 'Analytical 90%', org: 'Spontaneous 95%', disc: 'Automated 85%',
-        pros: 'พลังขับเคลื่อนทะลุพิกัด กล้าตั้งเป้าหมายที่คนอื่นคิดว่าเป็นไปไม่ได้',
-        cons: 'เอกสารและไฟล์สุขภาพกระจัดกระจาย นอนไม่เป็นเวลา คอร์ติซอลพุ่งสูง',
+        pros: 'เอเนอร์จี้ล้นทะลุจักรวาล กล้าตั้งเป้าหมายที่คนปกติเห็นแล้วต้องกรี๊ด',
+        cons: 'ไฟล์ประวัติสุขภาพกระจัดกระจายเหมือนเศษจรวด นอนน้อยจนหมอกุมขมับ',
         matchGoodKey: 'solo_analytical_structured_adhoc',
         matchBadKey: 'solo_intuitive_spontaneous_automated'
       },
@@ -828,13 +860,13 @@
         name: 'Mark Zuckerberg',
         sportType: 'นักรบแห่งสังเวียน (The Gladiator)',
         typeGroup: 'TYPE 6 • THE COMBATANTS',
-        quote: '"ใส่ทักซิโด้โต้คลื่น ทาครีมกันแดดหน้าขาววอก วิ่งเสร็จต่อด้วยล็อกคอคู่แข่งใน BJJ"',
-        photo: 'assets/founder_zuck.jpg?v=4',
+        quote: '"โบกครีมกันแดดหน้าขาววอกระดับงิ้วหลงโรง แล้วใส่ทักซิโด้โต้คลื่นแบบตัวแม่! วิ่งเสร็จขอไปล็อกคอเพื่อนในกรง MMA ต่อ ใครแพ้คัดออกค่ะสาว!"',
+        photo: 'assets/founder_zuck.jpg?v=5',
         stamp: '★ BJJ GLADIATOR',
         traits: ['MMA Fighter', 'Ultra-Competitive', 'Relentless'],
         drive: 'Team 88%', data: 'Analytical 95%', org: 'Structured 90%', disc: 'Automated 95%',
-        pros: 'ความดุดันและวินัยเต็มร้อย วิเคราะห์สถิติคู่แข่งและร่างกายแม่นยำ',
-        cons: 'จริงจังจนเครียด ไม่ยอมแพ้แม้ร่างกายจะส่งสัญญาณเตือนให้พัก',
+        pros: 'วินัยโหดเหมือนโกรธใครมา วิเคราะห์ข้อมูลร่างกายและคู่แข่งเป๊ะทุกจุด',
+        cons: 'จริงจังเบอร์สิบจนเส้นเลือดขมับเต้น ร่างกายพังไม่ว่าแต่เสียหน้าไม่ได้',
         matchGoodKey: 'team_analytical_spontaneous_automated',
         matchBadKey: 'solo_intuitive_spontaneous_adhoc'
       },
@@ -842,13 +874,13 @@
         name: 'Peter Thiel',
         sportType: 'นักวิ่งสายสวนกระแส (The Duelist)',
         typeGroup: 'TYPE 7 • THE COMBATANTS',
-        quote: '"วิ่งในความมืดคนเดียวด้วยกลยุทธ์หมากรุก Zero to One ไม่เดินตามก้นใคร"',
-        photo: 'assets/founder_thiel.jpg?v=4',
+        quote: '"คนอื่นวิ่งสวนลุม แต่ชีเลือกวิ่งย้อนศรในซอยเปลี่ยวตอนเที่ยงคืน! ทฤษฎีหมอทั่วไปชีไม่ปลื้ม เน้นสูตรลับอมตะพันปีแต่ลืมกินยาเมื่อเช้า สภาพพพ!"',
+        photo: 'assets/founder_thiel.jpg?v=5',
         stamp: '★ CONTRARIAN',
         traits: ['Chess Master', 'Contrarian', 'Longevity'],
         drive: 'Soloist 90%', data: 'Analytical 88%', org: 'Structured 85%', disc: 'Ad-hoc 75%',
-        pros: 'คิดต่าง มองเห็นจุดบกพร่องในร่างกายตัวเองที่คนอื่นมองข้าม',
-        cons: 'ไม่ค่อยเชื่อคำแนะนำมาตรฐานทางการแพทย์ ลืมกิจวัตรประจำวันบ่อย',
+        pros: 'ฉลาดแกมโกง มองเห็นจุดอ่อนร่างกายที่คนอื่นมองข้ามแบบคมกริบ',
+        cons: 'อินดี้เกินคุณน้า! วางแผนชีวิตไว้ร้อยปีแต่ลืมนัดหมอพรุ่งนี้เช้า',
         matchGoodKey: 'solo_analytical_spontaneous_automated',
         matchBadKey: 'team_intuitive_spontaneous_automated'
       },
@@ -856,27 +888,27 @@
         name: 'Larry Ellison',
         sportType: 'คู่ปรับตลอดกาลแห่งสนาม (The Rival)',
         typeGroup: 'TYPE 8 • THE COMBATANTS',
-        quote: '"แล่นเรือใบยอร์ชปะทะคลื่นยักษ์ วิ่งเพื่อขยี้สถิติคู่แข่ง ชัยชนะคือออกซิเจน"',
-        photo: 'assets/founder_ellison.jpg?v=4',
+        quote: '"ที่ลุกมาวิ่งไม่ได้รักสุขภาพนะจ๊ะ แต่จะเอาสถิติไปขิงใส่หน้าคู่แข่งให้มันอกแตกตาย! ซ้อมเสร็จขึ้นเรือยอร์ชจิบไวน์สวยๆ รวยและเริ่ดมากจบนะ!"',
+        photo: 'assets/founder_ellison.jpg?v=5',
         stamp: '★ AMERICA CUP',
         traits: ['Ruthless', 'Yacht Captain', 'Alpha'],
         drive: 'Team 80%', data: 'Analytical 85%', org: 'Spontaneous 80%', disc: 'Automated 88%',
-        pros: 'ไฟแค้นและความมุ่งมั่นสูงลิ่ว ดึงดูดทีมงานและสปีดได้ดีเยี่ยม',
-        cons: 'ใจร้อน ทนฟังรายงานสุขภาพยาวๆ ไม่ได้ ต้องการบทสรุปใน 1 วินาที',
+        pros: 'ขับเคลื่อนชีวิตด้วยไฟแค้นและแพสชันตัวแม่ สปีดแรงแซงทุกโค้ง',
+        cons: 'ความอดทนต่ำเตี้ยเรี่ยดิน เห็นใบตรวจเลือดยาวเกิน 3 บรรทัดคือวีนฉ่ำ',
         matchGoodKey: 'team_analytical_structured_automated',
         matchBadKey: 'team_intuitive_structured_adhoc'
       },
       'team_analytical_structured_adhoc': {
         name: 'Sam Altman',
-        sportType: 'ซูเปอร์สตาร์แห่งยุค AI (The Superstar)',
+        sportType: 'ซูเปอร์สตาร์สายไฮเทค (The Superstar)',
         typeGroup: 'TYPE 9 • THE MAESTROS',
-        quote: '"สั่ง Prompt เร่งความเร็วฝีเท้า ขับเคลื่อนหัวใจด้วยพลังงานนิวเคลียร์ฟิวชัน"',
-        photo: 'assets/founder_altman.jpg?v=4',
-        stamp: '★ AGI RUNNER',
-        traits: ['AGI Visionary', 'High-Speed', 'Strategic'],
+        quote: '"ปั่นงานกู้โลกจนลืมกินข้าวแต่เรื่องอุปกรณ์ไฮเทคขอให้บอก! วิเคราะห์ค่าเลือดละเอียดระดับซูเปอร์คอมพิวเตอร์ แต่ใบนัดตรวจสุขภาพหายไปไหนแล้วสาว?!"',
+        photo: 'assets/founder_altman.jpg?v=5',
+        stamp: '★ TECH RUNNER',
+        traits: ['Visionary', 'High-Speed', 'Strategic'],
         drive: 'Team 85%', data: 'Analytical 98%', org: 'Structured 85%', disc: 'Ad-hoc 80%',
-        pros: 'ใช้เครื่องมือ AI วิเคราะห์ทุกจังหวะชีวิต ช่างสังเกต มองการณ์ไกล',
-        cons: 'งานล้นมือจนตารางซ้อมหลุด ต้องพึ่งระบบแจ้งเตือนแบบด่วนพิเศษ',
+        pros: 'สมองไวระดับแสง ใช้ระบบอัจฉริยะวิเคราะห์ทุกจังหวะชีวิตแบบโฮ่งมาก',
+        cons: 'คิวทองจนตารางซ้อมพังพินาศ ต้องมีเลขาหรือบอทคอยจี้ตูดตลอดเวลา',
         matchGoodKey: 'solo_intuitive_structured_adhoc',
         matchBadKey: 'solo_analytical_structured_adhoc'
       },
@@ -884,13 +916,13 @@
         name: 'Jeff Bezos',
         sportType: 'กัปตันเรือเหล็กกล้ามทอง (The Captain)',
         typeGroup: 'TYPE 10 • THE MAESTROS',
-        quote: '"กล้ามแน่นระดับมหาเศรษฐี สวมแว่นเรย์แบนด์เดินเบ่งกล้ามอย่างดุดัน"',
-        photo: 'assets/founder_bezos.jpg?v=4',
+        quote: '"จากหนุ่มเนิร์ดขายหนังสือสู่แด๊ดดี้ร่างทองกล้ามปู! ใส่แว่นดำเดินเบ่งกล้ามสับๆ ให้เด็กมันดู ไม่เน้นทฤษฎีเยอะ เน้นยกเหล็กให้แขนปริ ปึ้งมากคุณพี่!"',
+        photo: 'assets/founder_bezos.jpg?v=5',
         stamp: '★ JACKED CHAD',
         traits: ['Jacked Chad', 'Day-1 Mentality', 'Powerhouse'],
         drive: 'Soloist 85%', data: 'Intuitive 80%', org: 'Structured 95%', disc: 'Ad-hoc 75%',
-        pros: 'เปลี่ยนร่างพังให้กลายเป็นร่างทองด้วยวินัยและการสร้างกล้ามเนื้อ',
-        cons: 'ดุดันเกินไปจนเพื่อนร่วมซ้อมตามไม่ทัน เกลียดการค้นหาเอกสารล่าช้า',
+        pros: 'อัพเกรดหุ่นพังเป็นร่างทองแบบจึ้งตาแตก ความมุ่งมั่นคือเต็มสิบไม่หัก',
+        cons: 'มั่นหน้ามั่นโหนกเกินต้าน เกลียดการรอคอยหรือค้นหาเอกสารช้าๆ ที่สุด',
         matchGoodKey: 'team_analytical_structured_adhoc',
         matchBadKey: 'solo_intuitive_structured_automated'
       },
@@ -898,13 +930,13 @@
         name: 'Bill Gates',
         sportType: 'ผู้คุมเกมกระดาน (The Playmaker)',
         typeGroup: 'TYPE 11 • THE MAESTROS',
-        quote: '"กระโดดข้ามเก้าอี้สำนักงาน คำนวณเพซและความดันเลือดลงใน Excel ละเอียดยิบ"',
-        photo: 'assets/founder_gates.jpg?v=4',
+        quote: '"ทำตาราง Excel คำนวณแคลอรี่และอัตราการเต้นหัวใจไว้ 48 ชีต! แต่พอเพื่อนชวนไปวิ่งจริง... ชีนั่งอ่านงานวิจัยจิบน้ำอัดลมอยู่บ้าน สภาพพพ ตื่นค่ะสาว!"',
+        photo: 'assets/founder_gates.jpg?v=5',
         stamp: '★ EXCEL MASTER',
         traits: ['Analytical', 'Bookworm', 'Strategist'],
         drive: 'Team 82%', data: 'Analytical 99%', org: 'Spontaneous 75%', disc: 'Ad-hoc 80%',
-        pros: 'เข้าใจวิทยาศาสตร์สุขภาพลึกซึ้ง ชอบทดลองวิธีป้องกันโรคเชิงรุก',
-        cons: 'คิดเยอะเกินไปจนไม่ได้ออกไปวิ่งจริง เอกสารมักจมในกองกระดาษวิจัย',
+        pros: 'ความรู้แน่นปึ้กเหมือนกลืนสารานุกรมลงท้อง วิเคราะห์โรคเก่งกว่าหมอ',
+        cons: 'ทฤษฎีร้อยล้านแต่ปฏิบัติศูนย์คะแนน! เอกสารตรวจเลือดจมอยู่ในกองหนังสือ',
         matchGoodKey: 'team_intuitive_spontaneous_automated',
         matchBadKey: 'solo_intuitive_structured_automated'
       },
@@ -912,13 +944,13 @@
         name: 'Marc Benioff',
         sportType: 'ผู้นำพลังบวกแห่งผืนป่า (The Leader)',
         typeGroup: 'TYPE 12 • THE MAESTROS',
-        quote: '"สวมพวงมาลัยฮาวายและเสื้อลายดอก Aloha วิ่งเทรลแจกพลังบวกให้ทุกคน"',
-        photo: 'assets/founder_benioff.jpg?v=4',
+        quote: '"คล้องพวงมาลัยฮาวายวิ่งเทรลแบบโลกสวยด้วยมือเรา! แจกพลังบวกฉ่ำมงลงให้ต้นไม้ใบหญ้า คอเลสเตอรอลพุ่งนิดหน่อยชีบอกไม่เป็นไร ขอบคุณพระเจ้าค่ะพส.!"',
+        photo: 'assets/founder_benioff.jpg?v=5',
         stamp: '★ ALOHA TRAIL',
         traits: ['Ohana Spirit', 'Charismatic', 'Trailblazer'],
         drive: 'Team 90%', data: 'Intuitive 85%', org: 'Structured 90%', disc: 'Automated 92%',
-        pros: 'สร้างแรงบันดาลใจให้คนอื่นดูแลสุขภาพ เชื่อมโยงทีมงานเป็นหนึ่งเดียว',
-        cons: 'มองโลกในแง่ดีเกินไปจนละเลยค่าเลือดตัวแดงแจ๋บางตัว',
+        pros: 'ตัวแม่สายซัพพอร์ต ป้ายยาเพื่อนทั้งออฟฟิศให้หันมาดูแลสุขภาพได้แบบเริ่ดๆ',
+        cons: 'โลกสวยทุ่งลาเวนเดอร์เกิ๊น เห็นผลเลือดตัวแดงแต่ยังยิ้มสู้แบบไม่รู้ร้อนรู้หนาว',
         matchGoodKey: 'team_intuitive_spontaneous_adhoc',
         matchBadKey: 'solo_analytical_structured_adhoc'
       },
@@ -926,13 +958,13 @@
         name: 'Sundar Pichai',
         sportType: 'สมอเรือผู้สุขุมนุ่มลึก (The Anchor)',
         typeGroup: 'TYPE 13 • THE CREW',
-        quote: '"วิ่งเพซคงที่ดั่งอัลกอริทึม ยิ้มรับทุกเนิน ร่างกายประมวลผลด้วยโมเดล Gemini"',
-        photo: 'assets/founder_pichai.jpg?v=4',
+        quote: '"โลกจะแตกหรือตะคริวจะกินน่อง ชีก็ยังยิ้มหวานรับศึกแบบนางงามมิตรภาพ! วิ่งเพซเดิมเป๊ะไม่เคยเปลี่ยน ซอฟต์ๆ ใสๆ แต่แอบดองวิตามินไว้เต็มลิ้นชักนะคุณน้า!"',
+        photo: 'assets/founder_pichai.jpg?v=5',
         stamp: '★ GEMINI STABLE',
         traits: ['Unflappable', 'Steady Pace', 'Diplomatic'],
         drive: 'Team 80%', data: 'Intuitive 75%', org: 'Structured 92%', disc: 'Ad-hoc 70%',
-        pros: 'ความสม่ำเสมอเป็นเลิศ ไม่เคยหลุดอารมณ์ ควบคุมความดันเลือดได้ดี',
-        cons: 'ไม่ค่อยชอบความท้าทายใหม่ๆ ชอบวิ่งเส้นทางเดิมๆ ซ้ำๆ',
+        pros: 'อารมณ์นิ่งยิ่งกว่าน้ำในตุ่ม ความดันเลือดเสถียรสุดในสามโลก',
+        cons: 'เซฟโซนตัวแม่ ไม่ยอมเปลี่ยนรูทวิ่งใหม่ๆ และขี้ลืมกินของบำรุงเป็นประจำ',
         matchGoodKey: 'solo_intuitive_spontaneous_automated',
         matchBadKey: 'solo_analytical_spontaneous_adhoc'
       },
@@ -940,13 +972,13 @@
         name: 'Tim Cook',
         sportType: 'นักกีฬาผู้รักความสม่ำเสมอ (The Harmonizer)',
         typeGroup: 'TYPE 14 • THE CREW',
-        quote: '"Good Morning! ตื่นตี 3:45 น. มาปิดวงแหวน Apple Watch ทุกวันไม่มีขาด"',
-        photo: 'assets/founder_cook.jpg?v=4',
+        quote: '"ตื่นตีสามครึ่งมาวิ่งปิดวงแหวนนาฬิกาตั้งแต่ไก่ยังไม่โห่! วินัยเป๊ะระดับหุ่นยนต์เรียกพี่ แต่พอหมอถามหาใบผลเลือดปีก่อน... ชีไถหารูปในไอโฟนไปเถอะสามวัน!"',
+        photo: 'assets/founder_cook.jpg?v=5',
         stamp: '★ 4 AM GRIND',
         traits: ['3:45 AM Club', 'Ring Closer', 'Precision'],
         drive: 'Soloist 80%', data: 'Intuitive 80%', org: 'Spontaneous 75%', disc: 'Automated 98%',
-        pros: 'วินัยการตื่นและการแจ้งเตือนดีที่สุดในโลก ไม่เคยพลาดวันนัดสำคัญ',
-        cons: 'ตารางชีวิตเป๊ะเกินไปจนเครียดหากอะไรไม่เป็นไปตามแผน',
+        pros: 'นาฬิกาปลุกเดินได้ ไม่เคยเทนัด ไม่เคยสาย วินัยเรื่องเวลาคือที่สุดของแจ้',
+        cons: 'ถ้าวงแหวนออกกำลังกายไม่ครบจะเกิดอาการนอยด์อ่ะ วิตกจริตไปหมด',
         matchGoodKey: 'team_intuitive_structured_adhoc',
         matchBadKey: 'solo_analytical_spontaneous_automated'
       },
@@ -954,13 +986,13 @@
         name: 'Satya Nadella',
         sportType: 'ผู้ปลุกพลังใจแห่งทีม (The Motivator)',
         typeGroup: 'TYPE 15 • THE CREW',
-        quote: '"กัปตันคริกเก็ตผู้เปี่ยมความเข้าใจ วิ่งไปคอยไฮไฟว์ให้กำลังใจเพื่อนทุกคน"',
-        photo: 'assets/founder_nadella.jpg?v=4',
+        quote: '"มัมหมีประจำแก๊งนักวิ่ง! วิ่งไปแวะแปะมือให้กำลังใจคนแปลกหน้าไปทั่วสวน ดูแลเพื่อนดีเหมือนแม่คนที่สอง แต่ผลตรวจสุขภาพตัวเองวางทิ้งไว้ไหนไม่รู้ค่ะสาว!"',
+        photo: 'assets/founder_nadella.jpg?v=5',
         stamp: '★ CRICKET CAPTAIN',
         traits: ['Empathy', 'Team Captain', 'Growth Mindset'],
         drive: 'Team 95%', data: 'Intuitive 85%', org: 'Spontaneous 80%', disc: 'Automated 88%',
-        pros: 'เข้าอกเข้าใจผู้อื่น ดึงเพื่อนๆ ที่เกลียดการออกกำลังกายให้มาวิ่งด้วยกันได้',
-        cons: 'ดูแลคนอื่นจนลืมดูแลสุขภาพตัวเอง ชอบเลื่อนการเช็กร่างกายตัวเองออกไป',
+        pros: 'อบอุ่นระดับไมโครเวฟ ลากเพื่อนที่ขี้เกียจตัวเป็นขนให้ออกมาวิ่งด้วยกันได้',
+        cons: 'ห่วงคนอื่นจนลืมดูร่างตัวเอง ใบตรวจเลือดตัวเองปลิวหายไปกับสายลม',
         matchGoodKey: 'team_analytical_spontaneous_adhoc',
         matchBadKey: 'team_analytical_spontaneous_automated'
       },
@@ -968,13 +1000,13 @@
         name: 'Brian Chesky',
         sportType: 'หัวเทียนจุดระเบิดพลังงาน (The Sparkplug)',
         typeGroup: 'TYPE 16 • THE CREW',
-        quote: '"อดีตนักเพาะกายร่างทอง พลังงานล้นเหลือ กระโดดสปรินต์ทักทายทุกคนในสวน"',
-        photo: 'assets/founder_chesky.jpg?v=4',
+        quote: '"วิ่ง 5 นาที แต่ถ่ายรูปทำคอนเทนต์และเม้ามอยกับป้าข้างทางไปแล้ว 2 ชั่วโมง! กล้ามแน่นเอเนอร์จี้เริ่ดแบบตัวแม่สายปาร์ตี้ ส่วนเรื่องจัดเก็บเอกสารคือศูนย์ค่ะ!"',
+        photo: 'assets/founder_chesky.jpg?v=5',
         stamp: '★ BODYBUILDER',
         traits: ['Bodybuilder', 'High Energy', 'Social Host'],
         drive: 'Team 92%', data: 'Intuitive 90%', org: 'Spontaneous 92%', disc: 'Ad-hoc 88%',
-        pros: 'สร้างบรรยากาศสนุกสนานให้การซ้อม พลังงานสูง ไม่ยอมให้เพื่อนเหงา',
-        cons: 'ขี้ลืมเรื่องเอกสารผลตรวจและใบนัดอย่างรุนแรง พึ่งพาสัญชาตญาณล้วนๆ',
+        pros: 'สร้างสีสันให้แก๊งซ้อมแบบฉ่ำมงลง อยู่ใกล้แล้วไม่มีคำว่าเหงาหรือท้อ',
+        cons: 'ขี้ลืมระดับตำนาน! ทั้งวิตามิน ทั้งใบนัดหมอ ทั้งใบผลเลือด หายเกลี้ยงยกแผง',
         matchGoodKey: 'team_intuitive_structured_automated',
         matchBadKey: 'solo_analytical_structured_automated'
       }
@@ -1369,11 +1401,18 @@
       lines.forEach((l, i) => ctx.fillText(l, x, y + i * lineHeight));
     }
 
-    // High-Resolution 9:16 IG Story Exporter + Mobile Native Share & Long-Press Preview Modal
+    // Ultra-HD 4K (1800 x 3180, 3x Retina Scale) 9:16 IG Story Exporter + Mobile Native Share
     function downloadFounderCard() {
       playSfx('pop');
+      const SCALE = 3; // 1800 x 3180 True 4K Ultra-HD Resolution!
       const canvas = document.getElementById('export-canvas');
+      canvas.width = 600 * SCALE;
+      canvas.height = 1060 * SCALE;
       const ctx = canvas.getContext('2d');
+      ctx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+
       const goodFounder = FOUNDERS[matchedFounder.matchGoodKey] || FOUNDERS['solo_intuitive_structured_automated'];
       const badFounder = FOUNDERS[matchedFounder.matchBadKey] || FOUNDERS['solo_analytical_spontaneous_automated'];
 
@@ -1463,27 +1502,27 @@
         ctx.fillStyle = '#fef08a';
         ctx.lineWidth = 2.5;
         ctx.beginPath();
-        ctx.roundRect(55, 488, 490, 58, 16);
+        ctx.roundRect(55, 484, 490, 68, 16);
         ctx.fill();
         ctx.stroke();
 
         ctx.fillStyle = '#18181b';
-        ctx.font = 'bold 15px Itim, Prompt';
-        wrapCanvasText(ctx, matchedFounder.quote, 300, 513, 460, 21, 2);
+        ctx.font = 'bold 14px Itim, Prompt';
+        wrapCanvasText(ctx, matchedFounder.quote, 300, 505, 464, 19, 3);
 
         // 3 Traits Row
         const traits = matchedFounder.traits || ['Soloist', 'Analytical', 'Automated'];
         ctx.font = 'bold 16px Kanit';
         ctx.fillStyle = '#ff5c28';
-        ctx.fillText(traits[0], 140, 574);
+        ctx.fillText(traits[0], 140, 577);
         ctx.fillStyle = '#a8a29e';
-        ctx.fillText('✦', 220, 574);
+        ctx.fillText('✦', 220, 577);
         ctx.fillStyle = '#10988b';
-        ctx.fillText(traits[1], 300, 574);
+        ctx.fillText(traits[1], 300, 577);
         ctx.fillStyle = '#a8a29e';
-        ctx.fillText('✦', 380, 574);
+        ctx.fillText('✦', 380, 577);
         ctx.fillStyle = '#4f46e5';
-        ctx.fillText(traits[2], 460, 574);
+        ctx.fillText(traits[2], 460, 577);
 
         // Pros & Cons Boxes
         ctx.fillStyle = '#ecfdf5';
