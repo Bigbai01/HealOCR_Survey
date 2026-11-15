@@ -20,6 +20,13 @@ function doPost(e) {
     var rawBody = e.postData && e.postData.contents ? e.postData.contents : '{}';
     var data = JSON.parse(rawBody);
 
+    if (data.action === 'clear') {
+      sheet.clear();
+      return ContentService
+        .createTextOutput(JSON.stringify({ status: 'cleared' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
     var headers = [
       'Timestamp (Thai Time)',
       'ISO Timestamp',
