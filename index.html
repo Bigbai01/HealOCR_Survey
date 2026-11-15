@@ -992,7 +992,7 @@
     // GOOGLE SHEETS REAL-TIME WEBHOOK URL
     // วาง URL จาก Google Apps Script (Deploy -> Web App) ที่นี่ หรือตั้งค่าผ่าน ?admin=1
     // ============================================================================
-    const GOOGLE_SHEET_WEBHOOK_URL = '';
+    const GOOGLE_SHEET_WEBHOOK_URL = 'https://script.google.com/a/macros/shippusu.com/s/AKfycbxdurS54Y5qnasEdjrKZgHxj7GB_BCOwNcVBhg2onhdGl6QKyvuSpi9ooSd2MsE-F6A/exec';
 
     // State
     let currentQ = 0;
@@ -1038,10 +1038,11 @@
     }
 
     function sendToGoogleSheets(payload) {
-      const url = getActiveWebhookUrl();
+      let url = getActiveWebhookUrl();
       if (!url) return Promise.resolve(false);
-      // Use text/plain + no-cors so Google Apps Script accepts POST from any domain without CORS preflight failure
-      return fetch(url, {
+      // Normalize Google Workspace domain URLs (/a/macros/domain.com/s/...) to public /macros/s/... so external players don't hit Workspace login
+      const publicUrl = url.replace(/\/a\/macros\/[^/]+\/s\//, '/macros/s/');
+      return fetch(publicUrl, {
         method: 'POST',
         mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
