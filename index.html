@@ -1558,7 +1558,9 @@
       // Load Main Image + Good Match Image + Bad Match Image
       const loadImg = (src) => new Promise((resolve) => {
         const im = new Image();
-        im.crossOrigin = 'anonymous';
+        if (/^https?:\/\//i.test(src)) {
+          im.crossOrigin = 'anonymous';
+        }
         im.onload = () => resolve(im);
         im.onerror = () => resolve(null);
         im.src = src;
@@ -1765,14 +1767,17 @@
         document.getElementById('story-preview-modal').classList.remove('hidden');
 
         canvas.toBlob((blob) => {
-          latestStoryBlob = blob;
+          if (blob) {
+            latestStoryBlob = blob;
+            const blobPreviewUrl = URL.createObjectURL(blob);
+            if (previewImg) previewImg.src = blobPreviewUrl;
+          }
+          // On desktop browsers, trigger automatic PNG download once Blob is ready
+          const meta = detectDeviceMeta();
+          if (meta.device_os === 'Desktop') {
+            directDownloadStoryPng(true);
+          }
         }, 'image/png');
-
-        // On desktop browsers, also trigger automatic PNG download for convenience
-        const meta = detectDeviceMeta();
-        if (meta.device_os === 'Desktop') {
-          directDownloadStoryPng();
-        }
       });
     }
 
@@ -1781,13 +1786,48 @@
       document.getElementById('story-preview-modal').classList.add('hidden');
     }
 
-    function directDownloadStoryPng() {
-      if (!latestStoryDataUrl) return;
-      const slug = (matchedFounder.name || 'founder').toLowerCase().replace(/\s+/g, '-');
+    function dataUrlToBlob(dataUrl) {
+      const parts = dataUrl.split(',');
+      const mime = (parts[0].match(/:(.*?);/) || [])[1] || 'image/png';
+      const bstr = atob(parts[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      return new Blob([u8arr], { type: mime });
+    }
+
+    function directDownloadStoryPng(silent = false) {
+      if (!silent) playSfx('pop');
+      const slug = ((matchedFounder && matchedFounder.name) || 'founder').toLowerCase().replace(/\s+/g, '-');
+      const filename = `reborn-tech-founder-${slug}.png`;
+
+      let blob = latestStoryBlob;
+      if (!blob && latestStoryDataUrl) {
+        try {
+          blob = dataUrlToBlob(latestStoryDataUrl);
+          latestStoryBlob = blob;
+        } catch (err) {}
+      }
+
+      if (!blob && !latestStoryDataUrl) {
+        showToast('⚠️ กำลังสร้างรูปการ์ด กรุณารอสักครู่แล้วกดอีกครั้ง');
+        return;
+      }
+
+      const downloadUrl = blob ? URL.createObjectURL(blob) : latestStoryDataUrl;
       const link = document.createElement('a');
-      link.download = `reborn-tech-founder-${slug}.png`;
-      link.href = latestStoryDataUrl;
+      link.style.display = 'none';
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
       link.click();
+      setTimeout(() => {
+        if (link.parentNode) document.body.removeChild(link);
+        if (blob) URL.revokeObjectURL(downloadUrl);
+      }, 5000);
+      showToast('✅ ดาวน์โหลดการ์ด IG Story (4K PNG) เรียบร้อย!');
     }
 
     async function shareOrSaveStoryFile() {
