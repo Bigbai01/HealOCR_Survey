@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard & Data Export - 16 Sport Personalities</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Kanit', sans-serif; background-color: #faf8f5; color: #1e293b; }
+  </style>
+</head>
+<body class="p-4 sm:p-8 max-w-6xl mx-auto">
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 pb-4 border-b border-stone-200">
+    <div>
+      <h1 class="text-2xl sm:text-3xl font-extrabold text-stone-800">📊 ผลสำรวจ 16 Sport Personalities (Tech Founders Edition)</h1>
+      <p class="text-sm text-stone-500 font-prompt">ระบบบันทึกผลการประเมินและข้อมูลวิจัยความต้องการผลิตภัณฑ์อัตโนมัติ</p>
+    </div>
+    <div class="flex gap-2">
+      <a href="index.html" class="px-4 py-2 bg-white border border-stone-300 rounded-xl text-xs font-bold text-stone-700 hover:bg-stone-50 shadow-sm">
+        🎮 เปิดหน้าควิซ
+      </a>
+      <button onclick="exportCSV()" class="px-4 py-2 bg-stone-900 rounded-xl text-xs font-bold text-white hover:bg-stone-800 shadow-sm">
+        📥 ดาวน์โหลดไฟล์ Excel / CSV
+      </button>
+      <button onclick="clearData()" class="px-3 py-2 bg-rose-50 border border-rose-200 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-100">
+        ล้างข้อมูล
+      </button>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+    <div class="bg-white border border-stone-200 p-5 rounded-2xl shadow-sm">
+      <div class="text-xs text-stone-400 font-medium">จำนวนผู้เล่นทั้งหมด</div>
+      <div id="stat-total" class="text-3xl font-extrabold text-stone-800 mt-1">0</div>
+    </div>
+    <div class="bg-white border border-stone-200 p-5 rounded-2xl shadow-sm">
+      <div class="text-xs text-rose-500 font-medium">ต้องการ AI สแกนแปลผลเลือด</div>
+      <div id="stat-ocr" class="text-3xl font-extrabold text-rose-600 mt-1">0%</div>
+    </div>
+    <div class="bg-white border border-stone-200 p-5 rounded-2xl shadow-sm">
+      <div class="text-xs text-amber-600 font-medium">ต้องการคลังรวมประวัติทุก รพ.</div>
+      <div id="stat-records" class="text-3xl font-extrabold text-amber-600 mt-1">0%</div>
+    </div>
+    <div class="bg-white border border-stone-200 p-5 rounded-2xl shadow-sm">
+      <div class="text-xs text-emerald-600 font-medium">ต้องการระบบบอทแจ้งเตือนแชท</div>
+      <div id="stat-alerts" class="text-3xl font-extrabold text-emerald-600 mt-1">0%</div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="bg-white border border-stone-200 rounded-2xl overflow-hidden shadow-sm">
+    <div class="p-4 border-b border-stone-100 flex justify-between items-center bg-stone-50/50">
+      <h3 class="font-bold text-sm text-stone-700">รายชื่อและผลลัพธ์ล่าสุด</h3>
+      <span class="text-xs text-stone-400 font-mono" id="records-count">แสดง 0 รายการ</span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs">
+        <thead class="bg-stone-50 text-stone-500 border-b border-stone-200 font-medium">
+          <tr>
+            <th class="p-3">เวลา</th>
+            <th class="p-3">Tech Founder ที่ได้</th>
+            <th class="p-3">Sport Personality Type</th>
+            <th class="p-3">สไตล์การวิ่ง</th>
+            <th class="p-3">การรับมือผลแล็บ</th>
+            <th class="p-3">การเก็บประวัติ รพ.</th>
+            <th class="p-3">วินัยการเตือนนัด/บำรุง</th>
+          </tr>
+        </thead>
+        <tbody id="table-body" class="divide-y divide-stone-100 text-stone-600">
+          <!-- Populated by JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    function loadData() {
+      const data = JSON.parse(localStorage.getItem('thq_responses') || '[]');
+      document.getElementById('stat-total').innerText = data.length;
+      document.getElementById('records-count').innerText = `แสดง ${data.length} รายการ`;
+
+      if (data.length === 0) {
+        document.getElementById('table-body').innerHTML = `
+          <tr><td colspan="7" class="p-8 text-center text-stone-400 font-prompt">ยังไม่มีข้อมูลผู้ตอบ ลองเล่นควิซที่หน้า <a href="index.html" class="text-orange-500 underline font-semibold">index.html</a> เพื่อทดสอบระบบได้เลยครับ</td></tr>
+        `;
+        return;
+      }
+
+      let ocrCount = 0;
+      let recordsCount = 0;
+      let alertCount = 0;
+
+      data.forEach(item => {
+        if (item.lab_numbers_handling === 'ai_ocr_translation') ocrCount++;
+        if (item.records_storage_style === 'centralized_digital_hub') recordsCount++;
+        if (item.routine_adherence_habit === 'automated_chat_alerts' || item.appointment_tracking_habit === 'smart_calendar_countdown') alertCount++;
+      });
+
+      document.getElementById('stat-ocr').innerText = Math.round((ocrCount / data.length) * 100) + '%';
+      document.getElementById('stat-records').innerText = Math.round((recordsCount / data.length) * 100) + '%';
+      document.getElementById('stat-alerts').innerText = Math.round((alertCount / data.length) * 100) + '%';
+
+      document.getElementById('table-body').innerHTML = data.slice().reverse().map(item => `
+        <tr class="hover:bg-stone-50/80 transition-colors">
+          <td class="p-3 text-stone-400 whitespace-nowrap">${item.completed_at ? new Date(item.completed_at).toLocaleString('th-TH') : '-'}</td>
+          <td class="p-3 font-bold text-stone-800 whitespace-nowrap">${item.founder_name || '-'}</td>
+          <td class="p-3 font-semibold text-orange-600 whitespace-nowrap">${item.sport_type || '-'}</td>
+          <td class="p-3 text-stone-600 max-w-xs truncate">${item.running_social_style || '-'}</td>
+          <td class="p-3 text-stone-600 max-w-xs truncate">${item.lab_numbers_handling || '-'}</td>
+          <td class="p-3 text-stone-600 max-w-xs truncate">${item.records_storage_style || '-'}</td>
+          <td class="p-3 font-medium text-emerald-700 max-w-xs truncate">${item.routine_adherence_habit || '-'}</td>
+        </tr>
+      `).join('');
+    }
+
+    function exportCSV() {
+      const data = JSON.parse(localStorage.getItem('thq_responses') || '[]');
+      if (data.length === 0) {
+        alert('ยังไม่มีข้อมูลสำหรับ Export ครับ');
+        return;
+      }
+
+      const headers = ['Timestamp', 'FounderName', 'SportType', 'RunningStyle', 'LabNumbersHandling', 'RecordsStorageStyle', 'RoutineAdherenceHabit', 'AppointmentTrackingHabit'];
+      const rows = data.map(item => [
+        `"${item.completed_at || ''}"`,
+        `"${item.founder_name || ''}"`,
+        `"${item.sport_type || ''}"`,
+        `"${item.running_social_style || ''}"`,
+        `"${item.lab_numbers_handling || ''}"`,
+        `"${item.records_storage_style || ''}"`,
+        `"${item.routine_adherence_habit || ''}"`,
+        `"${item.appointment_tracking_habit || ''}"`
+      ]);
+
+      const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `founder-sport-personality-survey-${Date.now()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function clearData() {
+      if (confirm('คุณแน่ใจหรือไม่ว่าต้องการล้างข้อมูลคำตอบทั้งหมดที่เก็บไว้ในเครื่องนี้?')) {
+        localStorage.removeItem('thq_responses');
+        loadData();
+      }
+    }
+
+    window.onload = loadData;
+  </script>
+</body>
+</html>
