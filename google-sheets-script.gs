@@ -48,6 +48,9 @@ function doPost(e) {
       'Q6 (คำตอบภาษาไทย)',
       'Q7 (คำตอบภาษาไทย)',
       'Q8 (คำตอบภาษาไทย)',
+      'Feedback Tags (ฟีเจอร์ที่อยากได้)',
+      'Feedback Text (ปัญหาสุขภาพ/ข้อเสนอแนะ)',
+      'User Contact (IG/LINE/Email)',
       'Device OS',
       'Browser Environment'
     ];
@@ -89,6 +92,9 @@ function doPost(e) {
       data.q6_text || '',
       data.q7_text || '',
       data.q8_text || '',
+      data.feedback_tags || '',
+      data.feedback_text || '',
+      data.user_contact || '',
       data.device_os || '',
       data.browser_env || ''
     ];

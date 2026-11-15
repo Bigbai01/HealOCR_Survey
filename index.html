@@ -432,6 +432,80 @@
     </div>
 
     <!-- ========================================================== -->
+    <!-- SCREEN 2.5: BONUS Q9 FEEDBACK SCREEN (BEFORE RESULT)       -->
+    <!-- ========================================================== -->
+    <div id="screen-feedback" class="hidden flex-col items-center justify-center py-3 w-full">
+      <div class="comic-card w-full overflow-hidden bg-white mb-4">
+        <!-- Browser Header -->
+        <div class="bg-punchPink px-4 py-2.5 border-b-3 border-stone-900 flex items-center justify-between">
+          <span class="px-3 py-0.5 rounded-full bg-punchYellow text-stone-900 font-display text-xs font-black border-2 border-stone-900 shadow-comicSm">
+            ✦ BONUS Q9 • ประมวลผลเสร็จ 99% ✦
+          </span>
+          <span class="text-xs font-display font-black text-stone-900">ALMOST DONE! 🎉</span>
+        </div>
+
+        <div class="p-5 space-y-4">
+          <div>
+            <h3 class="text-lg sm:text-xl font-body font-extrabold text-stone-900 leading-snug">
+              ก่อนเปิดการ์ดดูร่างอวตาร... ขอถามสั้นๆ 1 ข้อค่ะสาว! 💅
+            </h3>
+            <p class="text-xs sm:text-sm text-stone-600 font-body font-medium mt-1 leading-relaxed">
+              เรื่องสุขภาพหรือการดูแลตัวเองเรื่องไหน ที่ทุกวันนี้ยัง <span class="font-bold text-punchOrange">"ว้าวุ่น"</span> อยากให้มีระบบมาช่วยจัดการให้ชีวิตง่ายขึ้นที่สุด? <span class="text-stone-400">(เลือกได้หลายข้อ)</span>
+            </p>
+          </div>
+
+          <!-- Quick Multi-Select Chips -->
+          <div id="feedback-chips-container" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-body font-bold">
+            <button type="button" onclick="toggleFeedbackChip(this, 'แปลใบผลเลือด/ศัพท์หมอเป็นภาษาคน')" class="feedback-chip comic-btn p-2.5 bg-stone-50 hover:bg-punchYellow/40 text-left text-stone-800 flex items-center gap-2">
+              <span>🧾</span><span>แปลใบผลเลือด/ศัพท์หมอเป็นภาษาคน</span>
+            </button>
+            <button type="button" onclick="toggleFeedbackChip(this, 'รวมประวัติตรวจจากหลาย รพ. ไว้ที่เดียว')" class="feedback-chip comic-btn p-2.5 bg-stone-50 hover:bg-punchYellow/40 text-left text-stone-800 flex items-center gap-2">
+              <span>📁</span><span>รวมประวัติตรวจจากหลาย รพ. ไว้ที่เดียว</span>
+            </button>
+            <button type="button" onclick="toggleFeedbackChip(this, 'เตือนกินวิตามิน/ยา/นัดหมอแบบไม่ลืม')" class="feedback-chip comic-btn p-2.5 bg-stone-50 hover:bg-punchYellow/40 text-left text-stone-800 flex items-center gap-2">
+              <span>⏰</span><span>เตือนกินวิตามิน/ยา/นัดหมอแบบไม่ลืม</span>
+            </button>
+            <button type="button" onclick="toggleFeedbackChip(this, 'สรุปแผนซ้อม/ลดไขมันตามค่าเลือดจริง')" class="feedback-chip comic-btn p-2.5 bg-stone-50 hover:bg-punchYellow/40 text-left text-stone-800 flex items-center gap-2">
+              <span>🏃‍♂️</span><span>สรุปแผนซ้อม/ลดไขมันตามค่าเลือดจริง</span>
+            </button>
+            <button type="button" onclick="toggleFeedbackChip(this, 'คำนวณแคลอรี่/โภชนาการจากมื้ออาหาร')" class="feedback-chip comic-btn p-2.5 bg-stone-50 hover:bg-punchYellow/40 text-left text-stone-800 flex items-center gap-2">
+              <span>🍽️</span><span>คำนวณแคลอรี่/โภชนาการจากมื้ออาหาร</span>
+            </button>
+            <button type="button" onclick="toggleFeedbackChip(this, 'แก้ปัญหานอนน้อย/ออฟฟิศซินโดรม')" class="feedback-chip comic-btn p-2.5 bg-stone-50 hover:bg-punchYellow/40 text-left text-stone-800 flex items-center gap-2">
+              <span>😴</span><span>แก้ปัญหานอนน้อย/ออฟฟิศซินโดรม</span>
+            </button>
+          </div>
+
+          <!-- Open-ended Feedback Textarea -->
+          <div>
+            <label for="feedback-text" class="block text-xs font-display font-black text-stone-800 mb-1.5">
+              💬 อยากบ่นปัญหาที่เจอ หรือเสนอแนะฟีเจอร์/ตัวเกมเพิ่มเติม พิมพ์เต็มที่เลย:
+            </label>
+            <textarea id="feedback-text" rows="2" placeholder="เช่น เวลาเปลี่ยน รพ. หาผลเลือดเก่าไม่เคยเจอ, อยากให้แจ้งเตือนผ่าน LINE, เกมสนุกมากอยากให้เพิ่ม..." class="w-full p-3 rounded-xl border-2 border-stone-900 bg-amber-50/40 focus:bg-white font-body text-xs sm:text-sm text-stone-900 select-text focus:outline-none"></textarea>
+          </div>
+
+          <!-- Optional Contact Input -->
+          <div>
+            <label for="feedback-contact" class="block text-xs font-display font-black text-stone-800 mb-1">
+              🎁 ทิ้ง IG / LINE / อีเมล ไว้ได้นะ <span class="text-stone-400 font-body font-semibold">(ไม่บังคับ - เผื่อชวนเทสต์ระบบตัวเต็มก่อนใคร!)</span>:
+            </label>
+            <input id="feedback-contact" type="text" placeholder="เช่น @ig_username หรืออีเมลของคุณ (เว้นว่างได้)" class="w-full p-2.5 rounded-xl border-2 border-stone-900 bg-white font-body text-xs sm:text-sm text-stone-900 select-text focus:outline-none">
+          </div>
+
+          <!-- Submit & Reveal Button -->
+          <div class="pt-1 space-y-2">
+            <button type="button" onclick="submitFeedbackAndShowResult(false)" class="comic-btn w-full py-3.5 px-5 bg-punchOrange hover:bg-orange-600 text-white font-display font-black text-base flex items-center justify-center gap-2 shadow-comic">
+              <span>✨ ส่งคำตอบ & เปิดดูตัวละครของคุณเลย!</span>
+            </button>
+            <button type="button" onclick="submitFeedbackAndShowResult(true)" class="w-full py-1.5 text-xs font-body font-bold text-stone-400 hover:text-stone-700 underline text-center">
+              ข้ามไปดูผลลัพธ์เลย →
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================== -->
     <!-- SCREEN 3: ATOMPAKON + PUNCHLINE RESULT SCREEN (BIG PHOTO!) -->
     <!-- ========================================================== -->
     <div id="screen-result" class="hidden flex-col items-center pb-8 w-full">
@@ -1082,19 +1156,31 @@
       }).then(() => true).catch(() => false);
     }
 
+    let selectedFeedbackTags = [];
+
     function startGame() {
       playSfx('chime');
       startBgm();
       document.getElementById('screen-intro').classList.add('hidden');
+      document.getElementById('screen-feedback').classList.add('hidden');
       document.getElementById('screen-game').classList.remove('hidden');
       document.getElementById('screen-game').classList.add('flex');
       currentQ = 0;
       scores = { drive: { solo: 0, team: 0 }, cognitive: { analytical: 0, intuitive: 0 }, organization: { structured: 0, spontaneous: 0 }, discipline: { automated: 0, adhoc: 0 } };
       playerStats = { hp: 50, sanity: 50 };
+      selectedFeedbackTags = [];
       const hpEl = document.getElementById('hud-hp');
       const sanEl = document.getElementById('hud-sanity');
       if (hpEl) hpEl.innerText = playerStats.hp;
       if (sanEl) sanEl.innerText = playerStats.sanity;
+      const fbText = document.getElementById('feedback-text');
+      const fbContact = document.getElementById('feedback-contact');
+      if (fbText) fbText.value = '';
+      if (fbContact) fbContact.value = '';
+      document.querySelectorAll('.feedback-chip').forEach(btn => {
+        btn.classList.remove('bg-punchYellow', 'ring-2', 'ring-stone-900');
+        btn.classList.add('bg-stone-50');
+      });
       surveyData = {
         session_id: 'thq_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6)
       };
@@ -1181,9 +1267,41 @@
           currentQ++;
           renderQuestion(currentQ);
         } else {
-          finishAssessment();
+          showFeedbackScreen();
         }
       }, 230);
+    }
+
+    function showFeedbackScreen() {
+      playSfx('pop');
+      document.getElementById('screen-game').classList.add('hidden');
+      document.getElementById('screen-feedback').classList.remove('hidden');
+      document.getElementById('screen-feedback').classList.add('flex');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function toggleFeedbackChip(btn, tagValue) {
+      playSfx('pop');
+      const idx = selectedFeedbackTags.indexOf(tagValue);
+      if (idx === -1) {
+        selectedFeedbackTags.push(tagValue);
+        btn.classList.remove('bg-stone-50');
+        btn.classList.add('bg-punchYellow', 'ring-2', 'ring-stone-900');
+      } else {
+        selectedFeedbackTags.splice(idx, 1);
+        btn.classList.remove('bg-punchYellow', 'ring-2', 'ring-stone-900');
+        btn.classList.add('bg-stone-50');
+      }
+    }
+
+    function submitFeedbackAndShowResult(skipped = false) {
+      const fbText = (document.getElementById('feedback-text')?.value || '').trim();
+      const fbContact = (document.getElementById('feedback-contact')?.value || '').trim();
+      surveyData['feedback_tags'] = selectedFeedbackTags.join(' | ');
+      surveyData['feedback_text'] = fbText;
+      surveyData['user_contact'] = fbContact;
+      document.getElementById('screen-feedback').classList.add('hidden');
+      finishAssessment();
     }
 
     function initSwipePhysics() {
@@ -1348,6 +1466,11 @@
       populateFounderResult(fullKey, true);
 
       const meta = detectDeviceMeta();
+      const fbSummaryParts = [];
+      if (surveyData['feedback_tags']) fbSummaryParts.push(`Tags: [${surveyData['feedback_tags']}]`);
+      if (surveyData['feedback_text']) fbSummaryParts.push(`Note: ${surveyData['feedback_text']}`);
+      if (surveyData['user_contact']) fbSummaryParts.push(`Contact: ${surveyData['user_contact']}`);
+
       surveyData['founder_key'] = fullKey;
       surveyData['founder_name'] = matchedFounder.name;
       surveyData['sport_type'] = matchedFounder.sportType;
@@ -1358,7 +1481,9 @@
       surveyData['org_stat'] = activeStats.org;
       surveyData['disc_stat'] = activeStats.disc;
       surveyData['device_os'] = meta.device_os;
-      surveyData['browser_env'] = meta.browser_env;
+      surveyData['browser_env'] = fbSummaryParts.length
+        ? `${meta.browser_env} | ${fbSummaryParts.join(' | ')}`
+        : meta.browser_env;
       surveyData['completed_at'] = new Date().toISOString();
 
       try {
@@ -1373,6 +1498,7 @@
 
     function resetGame() {
       document.getElementById('screen-result').classList.add('hidden');
+      document.getElementById('screen-feedback').classList.add('hidden');
       document.getElementById('screen-intro').classList.remove('hidden');
       lucide.createIcons();
     }
@@ -1740,6 +1866,7 @@
       closeGalleryModal();
       document.getElementById('screen-intro').classList.add('hidden');
       document.getElementById('screen-game').classList.add('hidden');
+      document.getElementById('screen-feedback').classList.add('hidden');
       document.getElementById('screen-result').classList.remove('hidden');
       document.getElementById('screen-result').classList.add('flex');
       populateFounderResult(key, false);
@@ -1830,6 +1957,7 @@
         'hp_physical', 'sanity_brain', 'drive_stat', 'data_stat', 'org_stat', 'disc_stat',
         'running_social_style', 'running_motivation', 'health_concern_response', 'lab_numbers_handling',
         'workout_prep_style', 'records_storage_style', 'routine_adherence_habit', 'appointment_tracking_habit',
+        'feedback_tags', 'feedback_text', 'user_contact',
         'device_os', 'browser_env'
       ];
       const csvLines = [
