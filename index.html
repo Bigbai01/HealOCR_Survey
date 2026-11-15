@@ -150,7 +150,7 @@
     }
   </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between items-center p-3 sm:p-5">
+<body class="min-h-screen min-h-[100dvh] flex flex-col justify-between items-center p-3 sm:p-5 pb-6">
 
   <!-- Background Audio: Kevin MacLeod - Fluffing a Duck -->
   <audio id="bgm-audio" src="assets/fluffing_a_duck.mp3" loop preload="auto"></audio>
@@ -281,7 +281,7 @@
   </script>
 
   <!-- App Wrapper -->
-  <div class="w-full max-w-md mx-auto flex-1 flex flex-col justify-center pt-8">
+  <div class="w-full max-w-md mx-auto flex-1 flex flex-col justify-center pt-10 sm:pt-8">
 
     <!-- ============================================== -->
     <!-- SCREEN 1: LOBBY SCREEN (PUNCHLINE + ATOMPAKON) -->
@@ -1503,7 +1503,35 @@
       lucide.createIcons();
     }
 
-    function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 2) {
+    // iOS Safari / WebKit Canvas Bug Fix:
+    // WebKit's ctx.textAlign = 'center' fails to subtract width/2 on strings containing Thai glyphs.
+    // Always keep ctx.textAlign = 'left' and center manually using ctx.measureText(text).width!
+    function drawTextCentered(ctx, text, centerX, y, maxWidth = 0) {
+      ctx.textAlign = 'left';
+      const str = String(text || '');
+      let w = ctx.measureText(str).width;
+      if (maxWidth > 0 && w > maxWidth) {
+        ctx.fillText(str, centerX - maxWidth / 2, y, maxWidth);
+      } else {
+        ctx.fillText(str, centerX - w / 2, y);
+      }
+    }
+
+    function strokeAndFillCentered(ctx, text, centerX, y, maxWidth = 0) {
+      ctx.textAlign = 'left';
+      const str = String(text || '');
+      let w = ctx.measureText(str).width;
+      if (maxWidth > 0 && w > maxWidth) {
+        ctx.strokeText(str, centerX - maxWidth / 2, y, maxWidth);
+        ctx.fillText(str, centerX - maxWidth / 2, y, maxWidth);
+      } else {
+        ctx.strokeText(str, centerX - w / 2, y);
+        ctx.fillText(str, centerX - w / 2, y);
+      }
+    }
+
+    function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 2, center = false) {
+      ctx.textAlign = 'left';
       let tokens = [];
       if (typeof Intl !== 'undefined' && Intl.Segmenter) {
         const segmenter = new Intl.Segmenter('th', { granularity: 'word' });
@@ -1524,7 +1552,16 @@
       }
       if (line) lines.push(line.trim());
       lines = lines.slice(0, maxLines);
-      lines.forEach((l, i) => ctx.fillText(l, x, y + i * lineHeight));
+      if (center) {
+        const totalHeight = (lines.length - 1) * lineHeight;
+        const startY = y - totalHeight / 2;
+        lines.forEach((l, i) => {
+          const lw = Math.min(ctx.measureText(l).width, maxWidth);
+          ctx.fillText(l, x - lw / 2, startY + i * lineHeight, maxWidth);
+        });
+      } else {
+        lines.forEach((l, i) => ctx.fillText(l, x, y + i * lineHeight));
+      }
     }
 
     // Ultra-HD 4K (1800 x 3180, 3x Retina Scale) 9:16 IG Story Exporter + Mobile Native Share
@@ -1538,24 +1575,12 @@
       ctx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
+      ctx.textAlign = 'left';
 
       const goodFounder = FOUNDERS[matchedFounder.matchGoodKey] || FOUNDERS['solo_intuitive_structured_automated'];
       const badFounder = FOUNDERS[matchedFounder.matchBadKey] || FOUNDERS['solo_analytical_spontaneous_automated'];
 
-      ctx.fillStyle = '#f7f4eb';
-      ctx.fillRect(0, 0, 600, 1060);
-
-      // Top Atompakon-Style Header
-      ctx.fillStyle = '#18181b';
-      ctx.font = 'bold 28px Itim, Kanit';
-      ctx.textAlign = 'center';
-      ctx.fillText('REBORN AS A TECH FOUNDER', 300, 48);
-
-      ctx.fillStyle = '#ff5c28';
-      ctx.font = 'bold 14px Kanit';
-      ctx.fillText(matchedFounder.typeGroup, 300, 70);
-
-      // Load Main Image + Good Match Image + Bad Match Image
+      // Load Main Image + Good Match Image + Bad Match Image + Ensure WebFonts Ready
       const loadImg = (src) => new Promise((resolve) => {
         const im = new Image();
         if (/^https?:\/\//i.test(src)) {
@@ -1566,11 +1591,26 @@
         im.src = src;
       });
 
+      const fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+
       Promise.all([
         loadImg(matchedFounder.photo),
         loadImg(goodFounder.photo),
-        loadImg(badFounder.photo)
+        loadImg(badFounder.photo),
+        fontsReady
       ]).then(([mainImg, goodImg, badImg]) => {
+        ctx.fillStyle = '#f7f4eb';
+        ctx.fillRect(0, 0, 600, 1060);
+
+        // Top Header (Always manually centered to prevent iOS WebKit Thai centering bug)
+        ctx.fillStyle = '#18181b';
+        ctx.font = '800 26px Kanit';
+        drawTextCentered(ctx, 'REBORN AS A TECH FOUNDER', 300, 46, 540);
+
+        ctx.fillStyle = '#ff5c28';
+        ctx.font = '700 14px Kanit';
+        drawTextCentered(ctx, matchedFounder.typeGroup, 300, 70, 500);
+
         // 1. Draw HUGE Hero Founder Photo (280x280)
         const px = 160, py = 86, pw = 280, ph = 280;
         ctx.fillStyle = '#18181b';
@@ -1601,21 +1641,19 @@
         ctx.lineWidth = 2.5;
         ctx.stroke();
         ctx.fillStyle = '#18181b';
-        ctx.font = 'bold 13px Kanit';
-        ctx.textAlign = 'center';
-        ctx.fillText(matchedFounder.stamp, px + pw - 77, py + ph - 16);
+        ctx.font = '700 12px Kanit';
+        drawTextCentered(ctx, matchedFounder.stamp, px + pw - 77, py + ph - 16, 126);
 
-        // 2. Big Character Titles Below Photo
+        // 2. Big Character Titles Below Photo (Use loaded 700 Kanit weight so iOS never falls back)
         ctx.fillStyle = '#18181b';
-        ctx.font = 'bold 26px Itim, Prompt';
-        ctx.fillText(matchedFounder.sportType, 300, 405);
+        ctx.font = '700 22px Kanit';
+        drawTextCentered(ctx, matchedFounder.sportType, 300, 404, 530);
 
-        ctx.font = '900 40px Kanit';
+        ctx.font = '900 38px Kanit';
         ctx.fillStyle = '#ffd026';
         ctx.strokeStyle = '#18181b';
         ctx.lineWidth = 5;
-        ctx.strokeText(matchedFounder.name.toUpperCase(), 300, 448);
-        ctx.fillText(matchedFounder.name.toUpperCase(), 300, 448);
+        strokeAndFillCentered(ctx, matchedFounder.name.toUpperCase(), 300, 448, 530);
 
         // 3. Lower Summary Card Frame (Atompakon Style)
         ctx.fillStyle = '#ffffff';
@@ -1635,22 +1673,22 @@
         ctx.stroke();
 
         ctx.fillStyle = '#18181b';
-        ctx.font = 'bold 17px Itim, Prompt';
-        wrapCanvasText(ctx, matchedFounder.quote, 300, 520, 464, 21, 2);
+        ctx.font = '700 16px Kanit';
+        wrapCanvasText(ctx, matchedFounder.quote, 300, 519, 464, 20, 2, true);
 
         // 3 Traits Row
         const traits = matchedFounder.traits || ['Soloist', 'Analytical', 'Automated'];
-        ctx.font = 'bold 16px Kanit';
+        ctx.font = '700 15px Kanit';
         ctx.fillStyle = '#ff5c28';
-        ctx.fillText(traits[0], 140, 577);
+        drawTextCentered(ctx, traits[0], 135, 577, 140);
         ctx.fillStyle = '#a8a29e';
-        ctx.fillText('✦', 220, 577);
+        drawTextCentered(ctx, '✦', 218, 577);
         ctx.fillStyle = '#10988b';
-        ctx.fillText(traits[1], 300, 577);
+        drawTextCentered(ctx, traits[1], 300, 577, 150);
         ctx.fillStyle = '#a8a29e';
-        ctx.fillText('✦', 380, 577);
+        drawTextCentered(ctx, '✦', 382, 577);
         ctx.fillStyle = '#4f46e5';
-        ctx.fillText(traits[2], 460, 577);
+        drawTextCentered(ctx, traits[2], 465, 577, 140);
 
         // Pros & Cons Boxes
         ctx.fillStyle = '#ecfdf5';
@@ -1659,13 +1697,12 @@
         ctx.fill();
         ctx.stroke();
 
-        ctx.textAlign = 'left';
         ctx.fillStyle = '#047857';
-        ctx.font = 'bold 14px Kanit';
+        ctx.font = '700 14px Kanit';
         ctx.fillText('✅ จุดแข็งนักกีฬา (PROS)', 70, 620);
         ctx.fillStyle = '#18181b';
         ctx.font = '500 13px Prompt';
-        wrapCanvasText(ctx, matchedFounder.pros, 70, 644, 210, 19, 3);
+        wrapCanvasText(ctx, matchedFounder.pros, 70, 644, 210, 19, 3, false);
 
         ctx.fillStyle = '#fff1f2';
         ctx.beginPath();
@@ -1674,11 +1711,11 @@
         ctx.stroke();
 
         ctx.fillStyle = '#be123c';
-        ctx.font = 'bold 14px Kanit';
+        ctx.font = '700 14px Kanit';
         ctx.fillText('⚠️ จุดต้องระวัง (CONS)', 322, 620);
         ctx.fillStyle = '#18181b';
         ctx.font = '500 13px Prompt';
-        wrapCanvasText(ctx, matchedFounder.cons, 322, 644, 210, 19, 3);
+        wrapCanvasText(ctx, matchedFounder.cons, 322, 644, 210, 19, 3, false);
 
         // Stats Row
         ctx.fillStyle = '#f5f5f4';
@@ -1687,7 +1724,7 @@
         ctx.fill();
         ctx.stroke();
 
-        ctx.font = 'bold 13px Prompt';
+        ctx.font = '600 13px Prompt';
         ctx.fillStyle = '#18181b';
         ctx.fillText('🏃 Drive: ' + activeStats.drive, 72, 742);
         ctx.fillText('📊 Data: ' + activeStats.data, 315, 742);
@@ -1695,10 +1732,9 @@
         ctx.fillText('⏰ Discipline: ' + activeStats.disc, 315, 766);
 
         // 4. HOMIE & RIVAL FOUNDER PHOTOS AT BOTTOM (Atompakon "Homie cats" Style)
-        ctx.textAlign = 'center';
         ctx.fillStyle = '#78716c';
-        ctx.font = 'bold 13px Kanit';
-        ctx.fillText('✦ บัดดี้ซ้อมคู่บุญ (HOMIE) & คู่กัดในสนาม (RIVAL) ✦', 300, 806);
+        ctx.font = '700 13px Kanit';
+        drawTextCentered(ctx, '✦ บัดดี้ซ้อมคู่บุญ (HOMIE) & คู่กัดในสนาม (RIVAL) ✦', 300, 806, 480);
 
         // Good Match Card + Photo (No border around photo)
         ctx.fillStyle = '#ecfdf5';
@@ -1708,8 +1744,8 @@
         ctx.stroke();
 
         ctx.fillStyle = '#047857';
-        ctx.font = 'bold 13px Kanit';
-        ctx.fillText('💚 บัดดี้ซ้อมคู่บุญ', 174, 840);
+        ctx.font = '700 13px Kanit';
+        drawTextCentered(ctx, '💚 บัดดี้ซ้อมคู่บุญ', 174, 840, 210);
 
         if (goodImg) {
           ctx.save();
@@ -1720,11 +1756,11 @@
           ctx.restore();
         }
         ctx.fillStyle = '#18181b';
-        ctx.font = 'bold 15px Kanit';
-        ctx.fillText(goodFounder.name, 174, 948);
+        ctx.font = '700 15px Kanit';
+        drawTextCentered(ctx, goodFounder.name, 174, 948, 216);
         ctx.fillStyle = '#57534e';
         ctx.font = '500 11px Prompt';
-        ctx.fillText(goodFounder.sportType, 174, 968);
+        drawTextCentered(ctx, goodFounder.sportType, 174, 968, 216);
 
         // Bad Match Card + Photo (No border around photo)
         ctx.fillStyle = '#fff1f2';
@@ -1734,8 +1770,8 @@
         ctx.stroke();
 
         ctx.fillStyle = '#be123c';
-        ctx.font = 'bold 13px Kanit';
-        ctx.fillText('💔 คู่กัดในสนาม', 426, 840);
+        ctx.font = '700 13px Kanit';
+        drawTextCentered(ctx, '💔 คู่กัดในสนาม', 426, 840, 210);
 
         if (badImg) {
           ctx.save();
@@ -1746,20 +1782,20 @@
           ctx.restore();
         }
         ctx.fillStyle = '#18181b';
-        ctx.font = 'bold 15px Kanit';
-        ctx.fillText(badFounder.name, 426, 948);
+        ctx.font = '700 15px Kanit';
+        drawTextCentered(ctx, badFounder.name, 426, 948, 216);
         ctx.fillStyle = '#57534e';
         ctx.font = '500 11px Prompt';
-        ctx.fillText(badFounder.sportType, 426, 968);
+        drawTextCentered(ctx, badFounder.sportType, 426, 968, 216);
 
         // Signature inside card & Footer
         ctx.fillStyle = '#78716c';
-        ctx.font = 'bold 13px Itim, Kanit';
-        ctx.fillText('✦ byrattika.sittigool ✦', 300, 1004);
+        ctx.font = '700 13px Kanit';
+        drawTextCentered(ctx, '✦ byrattika.sittigool ✦', 300, 1004, 480);
 
         ctx.fillStyle = '#57534e';
-        ctx.font = 'bold 14px Kanit';
-        ctx.fillText('✦ REBORN AS A TECH FOUNDER • byrattika.sittigool ✦', 300, 1043);
+        ctx.font = '700 14px Kanit';
+        drawTextCentered(ctx, '✦ REBORN AS A TECH FOUNDER • byrattika.sittigool ✦', 300, 1043, 520);
 
         latestStoryDataUrl = canvas.toDataURL('image/png');
         const previewImg = document.getElementById('story-preview-img');
