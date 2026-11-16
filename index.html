@@ -1151,9 +1151,38 @@
       return fetch(publicUrl, {
         method: 'POST',
         mode: 'no-cors',
+        keepalive: true,
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(payload)
-      }).then(() => true).catch(() => false);
+      }).then(() => {
+        if (payload && payload.session_id) {
+          try {
+            const syncKey = 'thq_synced_' + publicUrl.slice(-24);
+            const synced = JSON.parse(localStorage.getItem(syncKey) || '[]');
+            if (!synced.includes(payload.session_id)) {
+              synced.push(payload.session_id);
+              localStorage.setItem(syncKey, JSON.stringify(synced));
+            }
+          } catch (e) {}
+        }
+        return true;
+      }).catch(() => false);
+    }
+
+    function syncPendingLocalResponses() {
+      try {
+        const url = getActiveWebhookUrl();
+        if (!url) return;
+        const publicUrl = url.replace(/\/a\/macros\/[^/]+\/s\//, '/macros/s/');
+        const syncKey = 'thq_synced_' + publicUrl.slice(-24);
+        const synced = JSON.parse(localStorage.getItem(syncKey) || '[]');
+        const rows = JSON.parse(localStorage.getItem('thq_responses') || '[]');
+        rows.forEach((row) => {
+          if (row && row.session_id && !synced.includes(row.session_id)) {
+            sendToGoogleSheets(row);
+          }
+        });
+      } catch (e) {}
     }
 
     let selectedFeedbackTags = [];
@@ -2049,6 +2078,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       lucide.createIcons();
+      syncPendingLocalResponses();
       if (window.location.search.includes('admin=1')) {
         openAdminModal();
       }
