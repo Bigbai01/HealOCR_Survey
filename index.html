@@ -1098,7 +1098,7 @@
     // GOOGLE SHEETS REAL-TIME WEBHOOK URL
     // วาง URL จาก Google Apps Script (Deploy -> Web App) ที่นี่ หรือตั้งค่าผ่าน ?admin=1
     // ============================================================================
-    const GOOGLE_SHEET_WEBHOOK_URL = 'https://script.google.com/a/macros/shippusu.com/s/AKfycbxdurS54Y5qnasEdjrKZgHxj7GB_BCOwNcVBhg2onhdGl6QKyvuSpi9ooSd2MsE-F6A/exec';
+    const GOOGLE_SHEET_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwgaQJDvvy4MRyvjlHlgrlfxsEIBYfK359V87BCpCFMxapebC65hperbaNUcs8P1689/exec';
 
     // State
     let currentQ = 0;
@@ -1140,7 +1140,9 @@
     }
 
     function getActiveWebhookUrl() {
-      return localStorage.getItem('thq_webhook_url') || GOOGLE_SHEET_WEBHOOK_URL || '';
+      const saved = localStorage.getItem('thq_webhook_url') || '';
+      if (saved && !saved.includes('shippusu.com') && !saved.includes('AKfycbxdurS54Y5')) return saved;
+      return GOOGLE_SHEET_WEBHOOK_URL || '';
     }
 
     function sendToGoogleSheets(payload) {
