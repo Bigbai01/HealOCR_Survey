@@ -155,8 +155,8 @@
   <!-- Background Audio: Kevin MacLeod - Fluffing a Duck -->
   <audio id="bgm-audio" src="assets/fluffing_a_duck.mp3" loop preload="auto"></audio>
 
-  <!-- Floating Music & Volume Controls (Top Right) -->
-  <div class="fixed top-2.5 right-2.5 z-50 flex items-center gap-1.5">
+  <!-- Top Music & Volume Controls (Never overlaps card text when scrolling) -->
+  <div class="w-full max-w-md mx-auto flex justify-end items-center gap-1.5 mb-2 z-30">
     <button id="bgm-btn" onclick="toggleBgm()" class="comic-btn px-2.5 py-1.5 bg-punchYellow hover:bg-yellow-300 text-stone-900 text-xs font-display font-black flex items-center gap-1">
       <span id="bgm-icon" class="text-sm">🦆</span>
       <span id="bgm-label">เปิดเพลงเป็ด</span>
@@ -281,7 +281,7 @@
   </script>
 
   <!-- App Wrapper -->
-  <div class="w-full max-w-md mx-auto flex-1 flex flex-col justify-center pt-10 sm:pt-8">
+  <div class="w-full max-w-md mx-auto flex-1 flex flex-col justify-center">
 
     <!-- ============================================== -->
     <!-- SCREEN 1: LOBBY SCREEN (PUNCHLINE + ATOMPAKON) -->
